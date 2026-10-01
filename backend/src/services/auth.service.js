@@ -55,7 +55,12 @@ const registerUser = async ({
         role,
     });
 
-    return user;
+    const token = generateToken(user._id.toString());
+
+    return {
+        user,
+        token,
+    };
 };
 
 const loginUser = async ({ email, password }) => {
@@ -92,7 +97,20 @@ const loginUser = async ({ email, password }) => {
     };
 };
 
+const getCurrentUser = async (userId) => {
+    const user = await User.findById(userId).select(
+        "-password"
+    );
+
+    if (!user) {
+        throw new Error("User not found");
+    }
+
+    return user;
+};
+
 module.exports = {
     registerUser,
     loginUser,
+    getCurrentUser,
 };
