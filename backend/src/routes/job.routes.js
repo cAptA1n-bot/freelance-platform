@@ -7,5 +7,7 @@ const requireRole = require("../middleware/role.middleware");
 const router = express.Router();
 
 router.post("/",authenticate,requireRole("FREELANCER"),jobController.createJob);
+router.get("/", authenticate, jobController.getJobs);
+router.get("/:jobId",authenticate,jobController.getJobById);
 
 module.exports = router;

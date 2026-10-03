@@ -39,6 +39,129 @@ const createJob = async ({
     return job;
 };
 
+const getJobs = async ({
+    page = 1,
+    limit = 10,
+    search,
+    skills,
+    experienceLevel,
+    workType,
+    minBudget,
+    maxBudget,
+    status = "OPEN",
+}) => {
+    const filter = {};
+
+    // Status
+    if (status) {
+        filter.status = status;
+    }
+
+    // Experience level
+    if (experienceLevel) {
+        filter.experienceLevel = experienceLevel;
+    }
+
+    // Work type
+    if (workType) {
+        filter.workType = workType;
+    }
+
+    // Budget range
+    if (minBudget !== undefined || maxBudget !== undefined) {
+        filter.budget = {};
+
+        if (minBudget !== undefined) {
+            filter.budget.$gte = Number(minBudget);
+        }
+
+        if (maxBudget !== undefined) {
+            filter.budget.$lte = Number(maxBudget);
+        }
+    }
+
+    // Skills
+    if (skills) {
+        const skillList = skills
+            .split(",")
+            .map((skill) => skill.trim())
+            .filter(Boolean);
+
+        if (skillList.length > 0) {
+            filter.skills = {
+                $in: skillList,
+            };
+        }
+    }
+
+    // Search
+    if (search) {
+        filter.$or = [
+            {
+                title: {
+                    $regex: search,
+                    $options: "i",
+                },
+            },
+            {
+                description: {
+                    $regex: search,
+                    $options: "i",
+                },
+            },
+        ];
+    }
+
+    // Pagination
+    const pageNumber = Math.max(Number(page), 1);
+    const limitNumber = Math.min(Math.max(Number(limit), 1), 50);
+
+    const skip = (pageNumber - 1) * limitNumber;
+
+    const [jobs, totalJobs] = await Promise.all([
+        Job.find(filter)
+            .populate(
+                "freelancerId",
+                "firstName lastName profilePicture experienceLevel"
+            )
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limitNumber),
+
+        Job.countDocuments(filter),
+    ]);
+
+    const totalPages = Math.ceil(totalJobs / limitNumber);
+
+    return {
+        jobs,
+        pagination: {
+            currentPage: pageNumber,
+            limit: limitNumber,
+            totalJobs,
+            totalPages,
+            hasNextPage: pageNumber < totalPages,
+            hasPreviousPage: pageNumber > 1,
+        },
+    };
+};
+
+const getJobById = async (jobId) => {
+    const job = await Job.findById(jobId)
+        .populate(
+            "freelancerId",
+            "firstName lastName profilePicture bio skills github portfolio experienceLevel"
+        );
+
+    if (!job) {
+        throw new Error("Job not found");
+    }
+
+    return job;
+};
+
 module.exports = {
     createJob,
+    getJobs,
+    getJobById,
 };
