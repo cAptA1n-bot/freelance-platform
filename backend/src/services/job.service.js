@@ -160,8 +160,73 @@ const getJobById = async (jobId) => {
     return job;
 };
 
+const updateJob = async (jobId, freelancerId, updates) => {
+    const allowedFields = [
+        "title",
+        "description",
+        "skills",
+        "experienceLevel",
+        "budget",
+        "duration",
+        "workType",
+    ];
+
+    const filteredUpdates = {};
+
+    for (const field of allowedFields) {
+        if (updates[field] !== undefined) {
+            filteredUpdates[field] = updates[field];
+        }
+    }
+
+    if (
+        filteredUpdates.skills !== undefined &&
+        (!Array.isArray(filteredUpdates.skills) ||
+            filteredUpdates.skills.length === 0)
+    ) {
+        throw new Error("At least one skill is required");
+    }
+
+    const job = await Job.findOneAndUpdate(
+        {
+            _id: jobId,
+            freelancerId,
+        },
+        filteredUpdates,
+        {
+            new: true,
+            runValidators: true,
+        }
+    );
+
+    if (!job) {
+        throw new Error(
+            "Job not found or you are not authorized to update this job"
+        );
+    }
+
+    return job;
+};
+
+const deleteJob = async (jobId, freelancerId) => {
+    const job = await Job.findOneAndDelete({
+        _id: jobId,
+        freelancerId,
+    });
+
+    if (!job) {
+        throw new Error(
+            "Job not found or you are not authorized to delete this job"
+        );
+    }
+
+    return job;
+};
+
 module.exports = {
     createJob,
     getJobs,
     getJobById,
+    updateJob,
+    deleteJob,
 };

@@ -56,8 +56,52 @@ const getJobById = async (req, res) => {
     }
 };
 
+const updateJob = async (req, res) => {
+    try {
+        const job = await jobService.updateJob(
+            req.params.jobId,
+            req.user.userId,
+            req.body
+        );
+
+        res.status(200).json({
+            success: true,
+            message: "Job updated successfully",
+            data: {
+                job,
+            },
+        });
+    } catch (error) {
+        res.status(400).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
+const deleteJob = async (req, res) => {
+    try {
+        await jobService.deleteJob(
+            req.params.jobId,
+            req.user.userId
+        );
+
+        res.status(200).json({
+            success: true,
+            message: "Job deleted successfully",
+        });
+    } catch (error) {
+        res.status(404).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
 module.exports = {
     createJob,
     getJobs,
     getJobById,
+    updateJob,
+    deleteJob,
 };
