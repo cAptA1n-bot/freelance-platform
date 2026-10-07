@@ -1,0 +1,77 @@
+const Application = require("../models/Application");
+const Job = require("../models/Job");
+
+const createApplication = async ({
+    jobId,
+    applicantId,
+    coverLetter,
+    proposedBudget,
+}) => {
+    // 1. Check whether the job exists
+    const job = await Job.findById(jobId);
+
+    if (!job) {
+        throw new Error("Job not found");
+    }
+
+    // 2. Check whether the job is still open
+    if (job.status !== "OPEN") {
+        throw new Error("This job is no longer accepting applications");
+    }
+
+    // 3. Check whether this user has already applied
+    const existingApplication = await Application.findOne({
+        jobId,
+        applicantId,
+    });
+
+    if (existingApplication) {
+        throw new Error("You have already applied to this job");
+    }
+
+    // 4. Validate application data
+    if (!coverLetter || proposedBudget === undefined) {
+        throw new Error(
+            "Cover letter and proposed budget are required"
+        );
+    }
+
+    // 5. Create application
+    const application = await Application.create({
+        jobId,
+        applicantId,
+        coverLetter,
+        proposedBudget,
+    });
+
+    return application;
+};
+
+const getApplicationsForJob = async (jobId, freelancerId) => {
+    // 1. Find the job and make sure this freelancer owns it
+    const job = await Job.findOne({
+        _id: jobId,
+        freelancerId,
+    });
+
+    if (!job) {
+        throw new Error(
+            "Job not found or you are not authorized to view its applications"
+        );
+    }
+
+    // 2. Find all applications for this job
+    const applications = await Application.find({ jobId })
+        .populate(
+            "applicantId",
+            "firstName lastName profilePicture bio skills github portfolio experienceLevel"
+        )
+        .sort({ createdAt: -1 });
+
+    return applications;
+};
+
+module.exports = {
+    createApplication,
+    getApplicationsForJob,
+}; 
