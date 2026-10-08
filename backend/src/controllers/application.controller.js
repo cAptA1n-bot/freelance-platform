@@ -46,7 +46,54 @@ const getApplicationsForJob = async (req, res) => {
     }
 };
 
+const updateApplicationStatus = async (req, res) => {
+    try {
+        const application =
+            await applicationService.updateApplicationStatus(
+                req.params.applicationId,
+                req.user.userId,
+                req.body.status
+            );
+
+        res.status(200).json({
+            success: true,
+            message: "Application status updated successfully",
+            data: {
+                application,
+            },
+        });
+    } catch (error) {
+        res.status(400).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
+const getMyApplications = async (req, res) => {
+    try {
+        const applications =
+            await applicationService.getMyApplications(
+                req.user.userId
+            );
+
+        res.status(200).json({
+            success: true,
+            data: {
+                applications,
+            },
+        });
+    } catch (error) {
+        res.status(400).json({
+            success: false,
+            message: error.message,
+        });
+    }
+};
+
 module.exports = {
     createApplication,
-    getApplicationsForJob
+    getApplicationsForJob,
+    updateApplicationStatus,
+    getMyApplications,
 };

@@ -71,7 +71,76 @@ const getApplicationsForJob = async (jobId, freelancerId) => {
     return applications;
 };
 
+const updateApplicationStatus = async (
+    applicationId,
+    userId,
+    newStatus
+) => {
+    const application = await Application.findById(applicationId);
+
+    if (!application) {
+        throw new Error("Application not found");
+    }
+
+    const job = await Job.findById(application.jobId);
+
+    if (!job) {
+        throw new Error("Job not found");
+    }
+
+    // Applicant can only withdraw their own application
+    if (newStatus === "WITHDRAWN") {
+        if (application.applicantId.toString() !== userId) {
+            throw new Error(
+                "You are not authorized to withdraw this application"
+            );
+        }
+
+        if (
+            application.status === "ACCEPTED" ||
+            application.status === "REJECTED"
+        ) {
+            throw new Error(
+                "This application can no longer be withdrawn"
+            );
+        }
+    } else {
+        // All other status changes are only allowed
+        // for the freelancer who owns the job
+        if (job.freelancerId.toString() !== userId) {
+            throw new Error(
+                "You are not authorized to update this application"
+            );
+        }
+
+        if (!["SHORTLISTED", "ACCEPTED", "REJECTED"].includes(newStatus)) {
+            throw new Error("Invalid application status");
+        }
+    }
+
+    application.status = newStatus;
+
+    await application.save();
+
+    return application;
+};
+
+const getMyApplications = async (applicantId) => {
+    const applications = await Application.find({
+        applicantId,
+    })
+        .populate(
+            "jobId",
+            "title description skills experienceLevel budget duration workType status freelancerId"
+        )
+        .sort({ createdAt: -1 });
+
+    return applications;
+};
+
 module.exports = {
     createApplication,
     getApplicationsForJob,
+    updateApplicationStatus,
+    getMyApplications,
 }; 
